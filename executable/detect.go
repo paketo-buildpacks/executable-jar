@@ -17,7 +17,10 @@
 package executable
 
 import (
+	"fmt"
+
 	"github.com/buildpacks/libcnb"
+	"github.com/paketo-buildpacks/libjvm"
 )
 
 type Detect struct{}
@@ -35,7 +38,14 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 		},
 	}
 
+	m, err := libjvm.NewManifest(context.Application.Path)
+	if err != nil {
+		return libcnb.DetectResult{}, fmt.Errorf("unable to read manifest in %s: %w", context.Application.Path, err)
+	}
 
+	if _, ok := m.Get("Main-Class"); ok {
+		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: "jvm-application"})
+	}
 
 	return result, nil
 }

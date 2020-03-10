@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package main
+package executable_test
 
 import (
-	"github.com/paketo-buildpacks/executable-jar/executable"
-	"github.com/paketo-buildpacks/libpak"
+	"testing"
+
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-func main() {
-	b := executable.NewBuild()
-	libpak.Build(b.Build)
+func TestUnit(t *testing.T) {
+	suite := spec.New("executable", spec.Report(report.Terminal{}))
+	suite("Build", testBuild)
+	suite("ClassPath", testClassPath)
+	suite("Detect", testDetect)
+	suite.Run(t)
 }

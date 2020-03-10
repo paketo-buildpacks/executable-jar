@@ -16,5 +16,12 @@
 
 package main
 
+import (
+	"github.com/paketo-buildpacks/executable-jar/executable"
+	"github.com/paketo-buildpacks/libpak"
+)
+
 func main() {
+	d := executable.Detect{}
+	libpak.Detect(d.Detect)
 }
