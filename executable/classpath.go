@@ -29,16 +29,14 @@ type ClassPath struct {
 	LayerContributor libpak.LayerContributor
 }
 
-func NewClassPath(classpath string) ClassPath {
-	s := strings.Split(classpath, " ")
-
+func NewClassPath(classpath []string) ClassPath {
 	expected := map[string]interface{}{
-		"class-path": s,
+		"classpath": classpath,
 	}
 
 	return ClassPath{
-		ClassPath:        s,
-		LayerContributor: libpak.NewLayerContributor("Manifest Class-Path", expected),
+		ClassPath:        classpath,
+		LayerContributor: libpak.NewLayerContributor("JVM Classpath", expected),
 	}
 }
 

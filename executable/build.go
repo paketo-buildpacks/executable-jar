@@ -19,6 +19,7 @@ package executable
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
@@ -44,12 +45,16 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s: %w", context.Application.Path, err)
 	}
 
-	if c, ok := m.Get("Class-Path"); ok {
-		result.Layers = append(result.Layers, NewClassPath(c))
-	}
+	if s, ok := m.Get("Main-Class"); ok {
+		cp := []string{context.Application.Path}
 
-	if mc, ok := m.Get("Main-Class"); ok {
-		command := fmt.Sprintf("java -cp $CLASSPATH $JAVA_OPTS %s", mc)
+		if s, ok := m.Get("Class-Path"); ok {
+			cp = append(cp, strings.Split(s, " ")...)
+		}
+
+		result.Layers = append(result.Layers, NewClassPath(cp))
+
+		command := fmt.Sprintf(`java -cp "${CLASSPATH}" ${JAVA_OPTS} %s`, s)
 		result.Processes = append(result.Processes,
 			libcnb.Process{Type: "executable-jar", Command: command},
 			libcnb.Process{Type: "task", Command: command},

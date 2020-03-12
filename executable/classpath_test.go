@@ -40,8 +40,8 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	it("contributes Manifest Class-Path", func() {
-		l := executable.NewClassPath("test-value-1 test-value-2")
+	it("contributes JVM Classpath", func() {
+		l := executable.NewClassPath([]string{"test-value-1", "test-value-2"})
 		layer, err := ctx.Layers.Layer("test-layer")
 		Expect(err).NotTo(HaveOccurred())
 

@@ -45,28 +45,40 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	it("contributes Manifest Class-Path", func() {
-		Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-		Expect(ioutil.WriteFile(filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"), []byte("Class-Path: test-class-path"), 0644))
-
-		result, err := executable.Build{}.Build(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(result.Layers).To(HaveLen(1))
-		Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{"test-class-path"}))
+	it.After(func() {
+		Expect(os.RemoveAll(ctx.Application.Path)).To(Succeed())
+		Expect(os.RemoveAll(ctx.Layers.Path)).To(Succeed())
 	})
 
-	it("contributes Manifest Main-Class", func() {
+	it("contributes Executable JAR with Class-Path", func() {
 		Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-		Expect(ioutil.WriteFile(filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"), []byte("Main-Class: test-main-class"), 0644))
+		Expect(ioutil.WriteFile(filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"), []byte(`Main-Class: test-main-class
+Class-Path: test-class-path`), 0644))
 
 		result, err := executable.Build{}.Build(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
+		Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path, "test-class-path"}))
 		Expect(result.Processes).To(ContainElements(
-			libcnb.Process{Type: "executable-jar", Command: "java -cp $CLASSPATH $JAVA_OPTS test-main-class"},
-			libcnb.Process{Type: "task", Command: "java -cp $CLASSPATH $JAVA_OPTS test-main-class"},
-			libcnb.Process{Type: "web", Command: "java -cp $CLASSPATH $JAVA_OPTS test-main-class"},
+			libcnb.Process{Type: "executable-jar", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+			libcnb.Process{Type: "task", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+			libcnb.Process{Type: "web", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
 		))
 	})
+
+	it("contributes Executable JAR without Class-Path", func() {
+		Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
+		Expect(ioutil.WriteFile(filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"), []byte(`Main-Class: test-main-class`), 0644))
+
+		result, err := executable.Build{}.Build(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
+		Expect(result.Processes).To(ContainElements(
+			libcnb.Process{Type: "executable-jar", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+			libcnb.Process{Type: "task", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+			libcnb.Process{Type: "web", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+		))
+	})
+
 }
