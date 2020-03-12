@@ -30,9 +30,7 @@ type ClassPath struct {
 }
 
 func NewClassPath(classpath []string) ClassPath {
-	expected := map[string]interface{}{
-		"classpath": classpath,
-	}
+	expected := map[string][]string{"classpath": classpath}
 
 	return ClassPath{
 		ClassPath:        classpath,
