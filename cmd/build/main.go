@@ -17,11 +17,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/paketo-buildpacks/executable-jar/executable"
 	"github.com/paketo-buildpacks/libpak"
+	"github.com/paketo-buildpacks/libpak/bard"
 )
 
 func main() {
-	b := executable.NewBuild()
-	libpak.Build(b.Build)
+	libpak.Build(executable.Build{Logger: bard.NewLogger(os.Stdout)})
 }

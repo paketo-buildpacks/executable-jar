@@ -18,7 +18,6 @@ package executable
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/buildpacks/libcnb"
@@ -28,12 +27,6 @@ import (
 
 type Build struct {
 	Logger bard.Logger
-}
-
-func NewBuild() Build {
-	return Build{
-		Logger: bard.NewLogger(os.Stdout),
-	}
 }
 
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
