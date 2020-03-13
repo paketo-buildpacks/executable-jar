@@ -40,7 +40,7 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 
 	m, err := libjvm.NewManifest(context.Application.Path)
 	if err != nil {
-		return libcnb.DetectResult{}, fmt.Errorf("unable to read manifest in %s: %w", context.Application.Path, err)
+		return libcnb.DetectResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
 	}
 
 	if _, ok := m.Get("Main-Class"); ok {

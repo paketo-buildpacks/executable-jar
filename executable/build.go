@@ -35,7 +35,7 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 
 	m, err := libjvm.NewManifest(context.Application.Path)
 	if err != nil {
-		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s: %w", context.Application.Path, err)
+		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
 	}
 
 	if s, ok := m.Get("Main-Class"); ok {
