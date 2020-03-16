@@ -30,30 +30,32 @@ type Build struct {
 }
 
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
-	b.Logger.Title(context.Buildpack)
-	result := libcnb.BuildResult{}
-
 	m, err := libjvm.NewManifest(context.Application.Path)
 	if err != nil {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
 	}
 
-	if s, ok := m.Get("Main-Class"); ok {
-		cp := []string{context.Application.Path}
-
-		if s, ok := m.Get("Class-Path"); ok {
-			cp = append(cp, strings.Split(s, " ")...)
-		}
-
-		result.Layers = append(result.Layers, NewClassPath(cp))
-
-		command := fmt.Sprintf(`java -cp "${CLASSPATH}" ${JAVA_OPTS} %s`, s)
-		result.Processes = append(result.Processes,
-			libcnb.Process{Type: "executable-jar", Command: command},
-			libcnb.Process{Type: "task", Command: command},
-			libcnb.Process{Type: "web", Command: command},
-		)
+	mc, ok := m.Get("Main-Class")
+	if !ok {
+		return libcnb.BuildResult{}, nil
 	}
+
+	b.Logger.Title(context.Buildpack)
+	result := libcnb.BuildResult{}
+
+	cp := []string{context.Application.Path}
+	if s, ok := m.Get("Class-Path"); ok {
+		cp = append(cp, strings.Split(s, " ")...)
+	}
+
+	result.Layers = append(result.Layers, NewClassPath(cp))
+
+	command := fmt.Sprintf(`java -cp "${CLASSPATH}" ${JAVA_OPTS} %s`, mc)
+	result.Processes = append(result.Processes,
+		libcnb.Process{Type: "executable-jar", Command: command},
+		libcnb.Process{Type: "task", Command: command},
+		libcnb.Process{Type: "web", Command: command},
+	)
 
 	return result, nil
 }
