@@ -2,7 +2,7 @@
 The Paketo Executable JAR Buildpack is a Cloud Native Buildpack that contributes a Process Type for executable JARs.
 
 ## Behavior
-This buildpack will participate if the following conditions are met
+This buildpack will participate if all of the following conditions are met
 
 * `<APPLICATION_ROOT>/META-INF/MANIFEST.MF` contains a `Main-Class` entry
 
