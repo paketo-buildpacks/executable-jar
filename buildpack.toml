@@ -17,7 +17,7 @@ api = "0.2"
 [buildpack]
 id      = "paketo-buildpacks/executable-jar"
 name    = "Paketo Executable JAR Buildpack"
-version = "{{.Version}}"
+version = "{{.version}}"
 
 [[stacks]]
 id = "io.buildpacks.stacks.bionic"
