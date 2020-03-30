@@ -18,6 +18,7 @@ package executable_test
 
 import (
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/buildpacks/libcnb"
@@ -38,6 +39,10 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 
 		ctx.Layers.Path, err = ioutil.TempDir("", "class-path-layers")
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	it.After(func() {
+		Expect(os.RemoveAll(ctx.Layers.Path)).To(Succeed())
 	})
 
 	it("contributes JVM Classpath", func() {
