@@ -1,4 +1,4 @@
-# `paketo-buildpacks/executable-jar`
+# `gcr.io/paketo-buildpacks/executable-jar`
 The Paketo Executable JAR Buildpack is a Cloud Native Buildpack that contributes a Process Type for executable JARs.
 
 ## Behavior
