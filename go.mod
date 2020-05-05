@@ -3,7 +3,7 @@ module github.com/paketo-buildpacks/executable-jar
 go 1.14
 
 require (
-	github.com/buildpacks/libcnb v1.9.0
+	github.com/buildpacks/libcnb v1.10.0
 	github.com/mitchellh/mapstructure v1.3.0 // indirect
 	github.com/onsi/gomega v1.9.0
 	github.com/paketo-buildpacks/libjvm v1.11.1
