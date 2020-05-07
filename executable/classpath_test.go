@@ -53,10 +53,7 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 		layer, err = l.Contribute(layer)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(layer.Build).To(BeTrue())
-		Expect(layer.Cache).To(BeTrue())
 		Expect(layer.Launch).To(BeTrue())
-
-		Expect(layer.SharedEnvironment["CLASSPATH"]).To(Equal("test-value-1:test-value-2"))
+		Expect(layer.LaunchEnvironment["CLASSPATH"]).To(Equal("test-value-1:test-value-2"))
 	})
 }

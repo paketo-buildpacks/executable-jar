@@ -40,10 +40,8 @@ func NewClassPath(classpath []string) ClassPath {
 
 func (c ClassPath) Contribute(layer libcnb.Layer) (libcnb.Layer, error) {
 	return c.LayerContributor.Contribute(layer, func() (libcnb.Layer, error) {
-		layer.SharedEnvironment.PrependPath("CLASSPATH", strings.Join(c.ClassPath, string(filepath.ListSeparator)))
+		layer.LaunchEnvironment.PrependPath("CLASSPATH", strings.Join(c.ClassPath, string(filepath.ListSeparator)))
 
-		layer.Build = true
-		layer.Cache = true
 		layer.Launch = true
 		return layer, nil
 	})
