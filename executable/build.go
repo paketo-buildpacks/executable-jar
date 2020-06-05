@@ -43,11 +43,12 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	b.Logger.Title(context.Buildpack)
 	result := libcnb.NewBuildResult()
 
-	command := fmt.Sprintf(`java -cp "${CLASSPATH}" ${JAVA_OPTS} %s`, mc)
+	command := "java"
+	arguments := []string{"-cp", `"${CLASSPATH}"`, "${JAVA_OPTS}", mc}
 	result.Processes = append(result.Processes,
-		libcnb.Process{Type: "executable-jar", Command: command},
-		libcnb.Process{Type: "task", Command: command},
-		libcnb.Process{Type: "web", Command: command},
+		libcnb.Process{Type: "executable-jar", Command: command, Arguments: arguments},
+		libcnb.Process{Type: "task", Command: command, Arguments: arguments},
+		libcnb.Process{Type: "web", Command: command, Arguments: arguments},
 	)
 
 	cp := []string{context.Application.Path}
