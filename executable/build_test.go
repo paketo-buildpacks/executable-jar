@@ -24,8 +24,9 @@ import (
 
 	"github.com/buildpacks/libcnb"
 	. "github.com/onsi/gomega"
-	"github.com/paketo-buildpacks/executable-jar/executable"
 	"github.com/sclevine/spec"
+
+	"github.com/paketo-buildpacks/executable-jar/executable"
 )
 
 func testBuild(t *testing.T, context spec.G, it spec.S) {
