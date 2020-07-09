@@ -22,6 +22,7 @@ import (
 
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
+	"github.com/paketo-buildpacks/libpak"
 	"github.com/paketo-buildpacks/libpak/bard"
 )
 
@@ -43,19 +44,32 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	b.Logger.Title(context.Buildpack)
 	result := libcnb.NewBuildResult()
 
-	command := fmt.Sprintf(`java -cp "${CLASSPATH}" ${JAVA_OPTS} %s`, mc)
-	result.Processes = append(result.Processes,
-		libcnb.Process{Type: "executable-jar", Command: command},
-		libcnb.Process{Type: "task", Command: command},
-		libcnb.Process{Type: "web", Command: command},
-	)
+	pr := libpak.PlanEntryResolver{Plan: context.Plan}
 
-	cp := []string{context.Application.Path}
-	if s, ok := m.Get("Class-Path"); ok {
-		cp = append(cp, strings.Split(s, " ")...)
+	ni := false
+	if n, ok, err := pr.Resolve("jvm-application"); err != nil {
+		return libcnb.BuildResult{}, fmt.Errorf("unable to resolve jvm-application plan entry\n%w", err)
+	} else if ok {
+		if v, ok := n.Metadata["native-image"].(bool); ok {
+			ni = v
+		}
 	}
 
-	result.Layers = append(result.Layers, NewClassPath(cp))
+	if !ni {
+		command := fmt.Sprintf(`java -cp "${CLASSPATH}" ${JAVA_OPTS} %s`, mc)
+		result.Processes = append(result.Processes,
+			libcnb.Process{Type: "executable-jar", Command: command},
+			libcnb.Process{Type: "task", Command: command},
+			libcnb.Process{Type: "web", Command: command},
+		)
+
+		cp := []string{context.Application.Path}
+		if s, ok := m.Get("Class-Path"); ok {
+			cp = append(cp, strings.Split(s, " ")...)
+		}
+
+		result.Layers = append(result.Layers, NewClassPath(cp))
+	}
 
 	return result, nil
 }
