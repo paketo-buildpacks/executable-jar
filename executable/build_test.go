@@ -82,4 +82,23 @@ Class-Path: test-class-path`), 0644))
 		))
 	})
 
+	context("native image", func() {
+
+		it("does not contribute if native image", func() {
+			Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
+			Expect(ioutil.WriteFile(filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"), []byte(`Main-Class: test-main-class`), 0644))
+
+			ctx.Plan.Entries = append(ctx.Plan.Entries, libcnb.BuildpackPlanEntry{
+				Name:     "jvm-application",
+				Metadata: map[string]interface{}{"native-image": true},
+			})
+
+			result, err := executable.Build{}.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(result.Layers).To(BeEmpty())
+			Expect(result.Processes).To(BeEmpty())
+		})
+	})
+
 }
