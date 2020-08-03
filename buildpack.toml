@@ -29,6 +29,11 @@ id = "io.paketo.stacks.tiny"
 [[stacks]]
 id = "org.cloudfoundry.stacks.cflinuxfs3"
 
+[[metadata.configurations]]
+name        = "JAVA_OPTS"
+description = "the flags passed to the JVM process at launch"
+launch      = true
+
 [metadata]
 pre-package   = "scripts/build.sh"
 include-files = [
