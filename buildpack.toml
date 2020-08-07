@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-api = "0.2"
+api = "0.4"
 
 [buildpack]
 id       = "paketo-buildpacks/executable-jar"
@@ -28,11 +28,6 @@ id = "io.paketo.stacks.tiny"
 
 [[stacks]]
 id = "org.cloudfoundry.stacks.cflinuxfs3"
-
-[[metadata.configurations]]
-name        = "JAVA_OPTS"
-description = "the flags passed to the JVM process at launch"
-launch      = true
 
 [metadata]
 pre-package   = "scripts/build.sh"

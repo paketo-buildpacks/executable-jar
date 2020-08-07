@@ -14,11 +14,6 @@ The buildpack will do the following:
   * Contributes entries to `$CLASSPATH`
 * Contributes `executable-jar`, `task`, and `web` process types
 
-## Configuration
-| Environment Variable | Description
-| -------------------- | -----------
-| `$JAVA_OPTS` | Configure the flags passed to the JVM process at launch
-
 ## License
 This buildpack is released under version 2.0 of the [Apache License][a].
 
