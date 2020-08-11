@@ -61,9 +61,9 @@ Class-Path: test-class-path`), 0644))
 
 		Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path, "test-class-path"}))
 		Expect(result.Processes).To(ContainElements(
-			libcnb.Process{Type: "executable-jar", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
-			libcnb.Process{Type: "task", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
-			libcnb.Process{Type: "web", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+			libcnb.Process{Type: "executable-jar", Command: "java", Arguments: []string{"test-main-class"}},
+			libcnb.Process{Type: "task", Command: "java", Arguments: []string{"test-main-class"}},
+			libcnb.Process{Type: "web", Command: "java", Arguments: []string{"test-main-class"}},
 		))
 	})
 
@@ -76,9 +76,9 @@ Class-Path: test-class-path`), 0644))
 
 		Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
 		Expect(result.Processes).To(ContainElements(
-			libcnb.Process{Type: "executable-jar", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
-			libcnb.Process{Type: "task", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
-			libcnb.Process{Type: "web", Command: `java -cp "${CLASSPATH}" ${JAVA_OPTS} test-main-class`},
+			libcnb.Process{Type: "executable-jar", Command: "java", Arguments: []string{"test-main-class"}},
+			libcnb.Process{Type: "task", Command: "java", Arguments: []string{"test-main-class"}},
+			libcnb.Process{Type: "web", Command: "java", Arguments: []string{"test-main-class"}},
 		))
 	})
 
