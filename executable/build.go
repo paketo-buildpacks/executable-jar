@@ -31,6 +31,16 @@ type Build struct {
 }
 
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
+	pr := libpak.PlanEntryResolver{Plan: context.Plan}
+
+	if n, ok, err := pr.Resolve("jvm-application"); err != nil {
+		return libcnb.BuildResult{}, fmt.Errorf("unable to resolve jvm-application plan entry\n%w", err)
+	} else if ok {
+		if v, ok := n.Metadata["native-image"].(bool); ok && v {
+			return libcnb.BuildResult{}, nil
+		}
+	}
+
 	m, err := libjvm.NewManifest(context.Application.Path)
 	if err != nil {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
@@ -44,33 +54,20 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	b.Logger.Title(context.Buildpack)
 	result := libcnb.NewBuildResult()
 
-	pr := libpak.PlanEntryResolver{Plan: context.Plan}
+	command := "java"
+	arguments := []string{mc}
+	result.Processes = append(result.Processes,
+		libcnb.Process{Type: "executable-jar", Command: command, Arguments: arguments},
+		libcnb.Process{Type: "task", Command: command, Arguments: arguments},
+		libcnb.Process{Type: "web", Command: command, Arguments: arguments},
+	)
 
-	ni := false
-	if n, ok, err := pr.Resolve("jvm-application"); err != nil {
-		return libcnb.BuildResult{}, fmt.Errorf("unable to resolve jvm-application plan entry\n%w", err)
-	} else if ok {
-		if v, ok := n.Metadata["native-image"].(bool); ok {
-			ni = v
-		}
+	cp := []string{context.Application.Path}
+	if s, ok := m.Get("Class-Path"); ok {
+		cp = append(cp, strings.Split(s, " ")...)
 	}
 
-	if !ni {
-		command := "java"
-		arguments := []string{mc}
-		result.Processes = append(result.Processes,
-			libcnb.Process{Type: "executable-jar", Command: command, Arguments: arguments},
-			libcnb.Process{Type: "task", Command: command, Arguments: arguments},
-			libcnb.Process{Type: "web", Command: command, Arguments: arguments},
-		)
-
-		cp := []string{context.Application.Path}
-		if s, ok := m.Get("Class-Path"); ok {
-			cp = append(cp, strings.Split(s, " ")...)
-		}
-
-		result.Layers = append(result.Layers, NewClassPath(cp))
-	}
+	result.Layers = append(result.Layers, NewClassPath(cp))
 
 	return result, nil
 }
