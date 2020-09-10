@@ -17,6 +17,7 @@
 package executable
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -40,7 +41,7 @@ func NewClassPath(classpath []string) ClassPath {
 
 func (c ClassPath) Contribute(layer libcnb.Layer) (libcnb.Layer, error) {
 	return c.LayerContributor.Contribute(layer, func() (libcnb.Layer, error) {
-		layer.LaunchEnvironment.PrependPath("CLASSPATH", strings.Join(c.ClassPath, string(filepath.ListSeparator)))
+		layer.LaunchEnvironment.Prepend("CLASSPATH", string(os.PathListSeparator), strings.Join(c.ClassPath, string(filepath.ListSeparator)))
 
 		return layer, nil
 	}, libpak.LaunchLayer)

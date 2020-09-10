@@ -55,6 +55,7 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(layer.Launch).To(BeTrue())
-		Expect(layer.LaunchEnvironment["CLASSPATH"]).To(Equal("test-value-1:test-value-2"))
+		Expect(layer.LaunchEnvironment["CLASSPATH.delim"]).To(Equal(string(os.PathListSeparator)))
+		Expect(layer.LaunchEnvironment["CLASSPATH.prepend"]).To(Equal("test-value-1:test-value-2"))
 	})
 }
