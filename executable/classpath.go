@@ -34,8 +34,10 @@ func NewClassPath(classpath []string) ClassPath {
 	expected := map[string][]string{"classpath": classpath}
 
 	return ClassPath{
-		ClassPath:        classpath,
-		LayerContributor: libpak.NewLayerContributor("JVM Classpath", expected),
+		ClassPath: classpath,
+		LayerContributor: libpak.NewLayerContributor("JVM Classpath", expected, libcnb.LayerTypes{
+			Launch: true,
+		}),
 	}
 }
 
@@ -44,7 +46,7 @@ func (c ClassPath) Contribute(layer libcnb.Layer) (libcnb.Layer, error) {
 		layer.LaunchEnvironment.Prepend("CLASSPATH", string(os.PathListSeparator), strings.Join(c.ClassPath, string(filepath.ListSeparator)))
 
 		return layer, nil
-	}, libpak.LaunchLayer)
+	})
 }
 
 func (ClassPath) Name() string {
