@@ -31,13 +31,18 @@ type Build struct {
 }
 
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
+	result := libcnb.NewBuildResult()
+
 	pr := libpak.PlanEntryResolver{Plan: context.Plan}
 
 	if n, ok, err := pr.Resolve("jvm-application"); err != nil {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to resolve jvm-application plan entry\n%w", err)
 	} else if ok {
 		if v, ok := n.Metadata["native-image"].(bool); ok && v {
-			return libcnb.BuildResult{}, nil
+			for _, entry := range context.Plan.Entries {
+				result.Unmet = append(result.Unmet, libcnb.UnmetPlanEntry{Name: entry.Name})
+			}
+			return result, nil
 		}
 	}
 
@@ -48,11 +53,13 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 
 	mc, ok := m.Get("Main-Class")
 	if !ok {
-		return libcnb.BuildResult{}, nil
+		for _, entry := range context.Plan.Entries {
+			result.Unmet = append(result.Unmet, libcnb.UnmetPlanEntry{Name: entry.Name})
+		}
+		return result, nil
 	}
 
 	b.Logger.Title(context.Buildpack)
-	result := libcnb.NewBuildResult()
 
 	command := "java"
 	arguments := []string{mc}
