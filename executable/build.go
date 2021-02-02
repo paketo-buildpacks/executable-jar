@@ -64,9 +64,24 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	command := "java"
 	arguments := []string{mc}
 	result.Processes = append(result.Processes,
-		libcnb.Process{Type: "executable-jar", Command: command, Arguments: arguments},
-		libcnb.Process{Type: "task", Command: command, Arguments: arguments},
-		libcnb.Process{Type: "web", Command: command, Arguments: arguments},
+		libcnb.Process{
+			Type:      "executable-jar",
+			Command:   command,
+			Arguments: arguments,
+			Direct:    true,
+		},
+		libcnb.Process{
+			Type:      "task",
+			Command:   command,
+			Arguments: arguments,
+			Direct:    true,
+		},
+		libcnb.Process{
+			Type:      "web",
+			Command:   command,
+			Arguments: arguments,
+			Direct:    true,
+		},
 	)
 
 	cp := []string{context.Application.Path}
