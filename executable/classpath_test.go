@@ -32,7 +32,8 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 	var (
 		Expect = NewWithT(t).Expect
 
-		ctx libcnb.BuildContext
+		ctx         libcnb.BuildContext
+		contributor executable.ClassPath
 	)
 
 	it.Before(func() {
@@ -40,22 +41,46 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 
 		ctx.Layers.Path, err = ioutil.TempDir("", "class-path-layers")
 		Expect(err).NotTo(HaveOccurred())
+		contributor = executable.ClassPath{
+			ClassPath: []string{"test-value-1", "test-value-2"},
+		}
 	})
 
 	it.After(func() {
 		Expect(os.RemoveAll(ctx.Layers.Path)).To(Succeed())
 	})
 
-	it("contributes JVM Classpath", func() {
-		l := executable.NewClassPath([]string{"test-value-1", "test-value-2"})
-		layer, err := ctx.Layers.Layer("test-layer")
-		Expect(err).NotTo(HaveOccurred())
+	context("launch is true", func() {
+		it.Before(func() {
+			contributor.Launch = true
+		})
 
-		layer, err = l.Contribute(layer)
-		Expect(err).NotTo(HaveOccurred())
+		it("contributes for build and launch", func() {
+			layer, err := ctx.Layers.Layer("test-layer")
+			Expect(err).NotTo(HaveOccurred())
 
-		Expect(layer.Launch).To(BeTrue())
-		Expect(layer.LaunchEnvironment["CLASSPATH.delim"]).To(Equal(string(os.PathListSeparator)))
-		Expect(layer.LaunchEnvironment["CLASSPATH.prepend"]).To(Equal("test-value-1:test-value-2"))
+			layer, err = contributor.Contribute(layer)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(layer.Launch).To(BeTrue())
+			Expect(layer.Build).To(BeTrue())
+			Expect(layer.SharedEnvironment["CLASSPATH.delim"]).To(Equal(string(os.PathListSeparator)))
+			Expect(layer.SharedEnvironment["CLASSPATH.prepend"]).To(Equal("test-value-1:test-value-2"))
+		})
+	})
+
+	context("launch is false", func() {
+		it("contributes for build only", func() {
+			layer, err := ctx.Layers.Layer("test-layer")
+			Expect(err).NotTo(HaveOccurred())
+
+			layer, err = contributor.Contribute(layer)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(layer.Launch).To(BeFalse())
+			Expect(layer.Build).To(BeTrue())
+			Expect(layer.BuildEnvironment["CLASSPATH.delim"]).To(Equal(string(os.PathListSeparator)))
+			Expect(layer.BuildEnvironment["CLASSPATH.prepend"]).To(Equal("test-value-1:test-value-2"))
+		})
 	})
 }

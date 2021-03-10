@@ -33,19 +33,6 @@ type Build struct {
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	result := libcnb.NewBuildResult()
 
-	pr := libpak.PlanEntryResolver{Plan: context.Plan}
-
-	if n, ok, err := pr.Resolve("jvm-application"); err != nil {
-		return libcnb.BuildResult{}, fmt.Errorf("unable to resolve jvm-application plan entry\n%w", err)
-	} else if ok {
-		if v, ok := n.Metadata["native-image"].(bool); ok && v {
-			for _, entry := range context.Plan.Entries {
-				result.Unmet = append(result.Unmet, libcnb.UnmetPlanEntry{Name: entry.Name})
-			}
-			return result, nil
-		}
-	}
-
 	m, err := libjvm.NewManifest(context.Application.Path)
 	if err != nil {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
@@ -61,35 +48,51 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 
 	b.Logger.Title(context.Buildpack)
 
-	command := "java"
-	arguments := []string{mc}
-	result.Processes = append(result.Processes,
-		libcnb.Process{
-			Type:      "executable-jar",
-			Command:   command,
-			Arguments: arguments,
-			Direct:    true,
-		},
-		libcnb.Process{
-			Type:      "task",
-			Command:   command,
-			Arguments: arguments,
-			Direct:    true,
-		},
-		libcnb.Process{
-			Type:      "web",
-			Command:   command,
-			Arguments: arguments,
-			Direct:    true,
-		},
-	)
+	pr := libpak.PlanEntryResolver{Plan: context.Plan}
+
+	launch := true
+	if n, ok, err := pr.Resolve(PlanEntryJVMApplication); err != nil {
+		return libcnb.BuildResult{}, fmt.Errorf("unable to resolve jvm-application plan entry\n%w", err)
+	} else if ok {
+		if nativeImage, ok := n.Metadata["native-image"].(bool); ok && nativeImage {
+			// this executable JAR is an input to a native image build and will not be included in the final image
+			launch = false
+		}
+	}
+
+	if launch {
+		command := "java"
+		arguments := []string{mc}
+		result.Processes = append(result.Processes,
+			libcnb.Process{
+				Type:      "executable-jar",
+				Command:   command,
+				Arguments: arguments,
+				Direct:    true,
+			},
+			libcnb.Process{
+				Type:      "task",
+				Command:   command,
+				Arguments: arguments,
+				Direct:    true,
+			},
+			libcnb.Process{
+				Type:      "web",
+				Command:   command,
+				Arguments: arguments,
+				Direct:    true,
+			},
+		)
+	}
 
 	cp := []string{context.Application.Path}
 	if s, ok := m.Get("Class-Path"); ok {
 		cp = append(cp, strings.Split(s, " ")...)
 	}
 
-	result.Layers = append(result.Layers, NewClassPath(cp))
+	classpathLayer := NewClassPath(cp, launch)
+	classpathLayer.Logger = b.Logger
+	result.Layers = append(result.Layers, classpathLayer)
 
 	return result, nil
 }

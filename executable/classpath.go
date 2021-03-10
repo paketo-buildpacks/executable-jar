@@ -23,32 +23,50 @@ import (
 
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libpak"
+	"github.com/paketo-buildpacks/libpak/bard"
 )
 
 type ClassPath struct {
 	ClassPath        []string
+	Launch           bool
 	LayerContributor libpak.LayerContributor
+	Logger           bard.Logger
 }
 
-func NewClassPath(classpath []string) ClassPath {
-	expected := map[string][]string{"classpath": classpath}
-
+func NewClassPath(classpath []string, launch bool) ClassPath {
 	return ClassPath{
 		ClassPath: classpath,
-		LayerContributor: libpak.NewLayerContributor("JVM Classpath", expected, libcnb.LayerTypes{
-			Launch: true,
-		}),
+		Launch:    launch,
 	}
 }
 
 func (c ClassPath) Contribute(layer libcnb.Layer) (libcnb.Layer, error) {
-	return c.LayerContributor.Contribute(layer, func() (libcnb.Layer, error) {
-		layer.LaunchEnvironment.Prepend("CLASSPATH", string(os.PathListSeparator), strings.Join(c.ClassPath, string(filepath.ListSeparator)))
+	contributor := libpak.NewLayerContributor(
+		"Class Path",
+		map[string]interface{}{
+			"classpath": c.ClassPath,
+			"launch":    c.Launch,
+		},
+		libcnb.LayerTypes{
+			Build:  true,
+			Launch: c.Launch,
+		},
+	)
+	contributor.Logger = c.Logger
+
+	return contributor.Contribute(layer, func() (libcnb.Layer, error) {
+		var env libcnb.Environment
+		if c.Launch {
+			env = layer.SharedEnvironment
+		} else {
+			env = layer.BuildEnvironment
+		}
+		env.Prepend("CLASSPATH", string(os.PathListSeparator), strings.Join(c.ClassPath, string(filepath.ListSeparator)))
 
 		return layer, nil
 	})
 }
 
 func (ClassPath) Name() string {
-	return "class-path"
+	return "classpath"
 }
