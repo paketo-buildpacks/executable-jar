@@ -44,6 +44,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		ctx.Layers.Path, err = ioutil.TempDir("", "build-layers")
 		Expect(err).NotTo(HaveOccurred())
+
+		Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
 	})
 
 	it.After(func() {
@@ -51,8 +53,16 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		Expect(os.RemoveAll(ctx.Layers.Path)).To(Succeed())
 	})
 
-	context("Manifest has Main-Class", func() {
-		it("contributes Executable JAR with Class-Path", func() {
+	context("manifest with Main-Class and Class-Path", func() {
+		it.Before(func() {
+			Expect(ioutil.WriteFile(
+				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
+				[]byte("Main-Class: test-main-class"),
+				0644,
+			)).To(Succeed())
+		})
+
+		it("contributes process types and classpath", func() {
 			Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
 			Expect(ioutil.WriteFile(
 				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
@@ -64,6 +74,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path, "test-class-path"}))
+			Expect(result.Layers[0].(executable.ClassPath).Launch).To(BeTrue())
 			Expect(result.Processes).To(ContainElements(
 				libcnb.Process{
 					Type:      "executable-jar",
@@ -84,6 +95,51 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Direct:    true,
 				},
 			))
+		})
+
+		context("manifest with Main-Class and without Class-Path", func() {
+			it.Before(func() {
+				Expect(ioutil.WriteFile(
+					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
+					[]byte("Main-Class: test-main-class"),
+					0644,
+				)).To(Succeed())
+			})
+
+			it("contributes process types and classpath", func() {
+				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
+				Expect(ioutil.WriteFile(
+					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
+					[]byte("Main-Class: test-main-class"),
+					0644,
+				)).To(Succeed())
+
+				result, err := executable.Build{}.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
+				Expect(result.Layers[0].(executable.ClassPath).Launch).To(BeTrue())
+				Expect(result.Processes).To(ContainElements(
+					libcnb.Process{
+						Type:      "executable-jar",
+						Command:   "java",
+						Arguments: []string{"test-main-class"},
+						Direct:    true,
+					},
+					libcnb.Process{
+						Type:      "task",
+						Command:   "java",
+						Arguments: []string{"test-main-class"},
+						Direct:    true,
+					},
+					libcnb.Process{
+						Type:      "web",
+						Command:   "java",
+						Arguments: []string{"test-main-class"},
+						Direct:    true,
+					},
+				))
+			})
 		})
 
 		it("contributes Executable JAR without Class-Path", func() {
@@ -121,11 +177,11 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		context("native image", func() {
-			it("does not contribute", func() {
+			it("contributes classpath for build", func() {
 				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
 				Expect(ioutil.WriteFile(
 					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
-					[]byte(`Main-Class: test-main-class`),
+					[]byte("Main-Class: test-main-class\nClass-Path: test-class-path"),
 					0644,
 				)).To(Succeed())
 
@@ -137,16 +193,16 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				result, err := executable.Build{}.Build(ctx)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(result.Layers).To(BeEmpty())
 				Expect(result.Processes).To(BeEmpty())
-				Expect(result.Unmet).To(HaveLen(1))
-				Expect(result.Unmet[0].Name).To(Equal("jvm-application"))
+				Expect(result.Layers).To(HaveLen(1))
+				Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path, "test-class-path"}))
+				Expect(result.Layers[0].(executable.ClassPath).Launch).To(BeFalse())
 			})
 		})
 	})
 
 	context("Manifest does not have Main-Class", func() {
-		it("does not contribute", func() {
+		it("return unmet jvm-application plan entry", func() {
 			Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
 			Expect(ioutil.WriteFile(
 				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
