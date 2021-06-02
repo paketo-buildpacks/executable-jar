@@ -93,6 +93,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Command:   "java",
 					Arguments: []string{"test-main-class"},
 					Direct:    true,
+					Default:   true,
 				},
 			))
 		})
@@ -137,6 +138,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						Command:   "java",
 						Arguments: []string{"test-main-class"},
 						Direct:    true,
+						Default:   true,
 					},
 				))
 			})
@@ -172,6 +174,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Command:   "java",
 					Arguments: []string{"test-main-class"},
 					Direct:    true,
+					Default:   true,
 				},
 			))
 		})

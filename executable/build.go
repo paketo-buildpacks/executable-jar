@@ -81,6 +81,7 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 				Command:   command,
 				Arguments: arguments,
 				Direct:    true,
+				Default:   true,
 			},
 		)
 	}
