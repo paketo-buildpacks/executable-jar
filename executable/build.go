@@ -48,6 +48,11 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 
 	b.Logger.Title(context.Buildpack)
 
+	cr, err := libpak.NewConfigurationResolver(context.Buildpack, nil)
+	if err != nil {
+		return libcnb.BuildResult{}, fmt.Errorf("unable to create configuration resolver\n%w", err)
+	}
+
 	pr := libpak.PlanEntryResolver{Plan: context.Plan}
 
 	launch := true
@@ -84,6 +89,22 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 				Default:   true,
 			},
 		)
+
+		if cr.ResolveBool("BP_LIVE_RELOAD_ENABLED") {
+			for i := 0; i < len(result.Processes); i++ {
+				result.Processes[i].Default = false
+			}
+
+			result.Processes = append(result.Processes,
+				libcnb.Process{
+					Type:      "reload",
+					Command:   "watchexec",
+					Arguments: []string{"-r", command, mc},
+					Direct:    true,
+					Default:   true,
+				},
+			)
+		}
 	}
 
 	cp := []string{context.Application.Path}

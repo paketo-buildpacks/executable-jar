@@ -128,4 +128,33 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			}))
 		})
 	})
+
+	context("$BP_LIVE_RELOAD_ENABLED is set", func() {
+		it.Before(func() {
+			Expect(os.Setenv("BP_LIVE_RELOAD_ENABLED", "true")).To(Succeed())
+		})
+
+		it.After(func() {
+			Expect(os.Unsetenv("BP_LIVE_RELOAD_ENABLED")).To(Succeed())
+		})
+
+		it("requires watchexec", func() {
+			Expect(detect.Detect(ctx)).To(Equal(libcnb.DetectResult{
+				Pass: true,
+				Plans: []libcnb.BuildPlan{
+					{
+						Provides: []libcnb.BuildPlanProvide{
+							{Name: "jvm-application"},
+						},
+						Requires: []libcnb.BuildPlanRequire{
+							{Name: "jre", Metadata: map[string]interface{}{"launch": true}},
+							{Name: "jvm-application-package"},
+							{Name: "jvm-application"},
+							{Name: "watchexec"},
+						},
+					},
+				},
+			}))
+		})
+	})
 }

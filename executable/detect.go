@@ -21,17 +21,24 @@ import (
 
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
+	"github.com/paketo-buildpacks/libpak"
 )
 
 const (
 	PlanEntryJVMApplication        = "jvm-application"
 	PlanEntryJVMApplicationPackage = "jvm-application-package"
 	PlanEntryJRE                   = "jre"
+	PlanEntryWatchexec             = "watchexec"
 )
 
 type Detect struct{}
 
 func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error) {
+	cr, err := libpak.NewConfigurationResolver(context.Buildpack, nil)
+	if err != nil {
+		return libcnb.DetectResult{}, fmt.Errorf("unable to create configuration resolver\n%w", err)
+	}
+
 	result := libcnb.DetectResult{
 		Pass: true,
 		Plans: []libcnb.BuildPlan{
@@ -55,6 +62,14 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 
 	if _, ok := m.Get("Main-Class"); ok {
 		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
+	}
+
+	if cr.ResolveBool("BP_LIVE_RELOAD_ENABLED") {
+		for i := range result.Plans {
+			result.Plans[i].Requires = append(result.Plans[i].Requires, libcnb.BuildPlanRequire{
+				Name: PlanEntryWatchexec,
+			})
+		}
 	}
 
 	return result, nil

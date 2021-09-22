@@ -179,6 +179,57 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			))
 		})
 
+		context("$BP_LIVE_RELOAD_ENABLED is true", func() {
+			it.Before(func() {
+				Expect(os.Setenv("BP_LIVE_RELOAD_ENABLED", "true")).To(Succeed())
+			})
+
+			it.After(func() {
+				Expect(os.Unsetenv("BP_LIVE_RELOAD_ENABLED")).To(Succeed())
+			})
+
+			it("contributes reloadable process type", func() {
+				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
+				Expect(ioutil.WriteFile(
+					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
+					[]byte(`Main-Class: test-main-class`),
+					0644,
+				)).To(Succeed())
+
+				result, err := executable.Build{}.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
+				Expect(result.Processes).To(ContainElements(
+					libcnb.Process{
+						Type:      "executable-jar",
+						Command:   "java",
+						Arguments: []string{"test-main-class"},
+						Direct:    true,
+					},
+					libcnb.Process{
+						Type:      "task",
+						Command:   "java",
+						Arguments: []string{"test-main-class"},
+						Direct:    true,
+					},
+					libcnb.Process{
+						Type:      "web",
+						Command:   "java",
+						Arguments: []string{"test-main-class"},
+						Direct:    true,
+					},
+					libcnb.Process{
+						Type:      "reload",
+						Command:   "watchexec",
+						Arguments: []string{"-r", "java", "test-main-class"},
+						Direct:    true,
+						Default:   true,
+					},
+				))
+			})
+		})
+
 		context("native image", func() {
 			it("contributes classpath for build", func() {
 				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
