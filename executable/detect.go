@@ -29,6 +29,7 @@ const (
 	PlanEntryJVMApplicationPackage = "jvm-application-package"
 	PlanEntryJRE                   = "jre"
 	PlanEntryWatchexec             = "watchexec"
+	PlanEntrySyft                  = "syft"
 )
 
 type Detect struct{}
@@ -47,6 +48,7 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 					{Name: PlanEntryJVMApplication},
 				},
 				Requires: []libcnb.BuildPlanRequire{
+					{Name: PlanEntrySyft},
 					{Name: PlanEntryJRE, Metadata: map[string]interface{}{"launch": true}},
 					{Name: PlanEntryJVMApplicationPackage},
 					{Name: PlanEntryJVMApplication},
