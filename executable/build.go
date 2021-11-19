@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/paketo-buildpacks/libpak/effect"
+	"github.com/paketo-buildpacks/libpak/sbom"
+
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
 	"github.com/paketo-buildpacks/libpak"
@@ -104,6 +107,11 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 					Default:   true,
 				},
 			)
+		}
+
+		bomScanner := sbom.NewSyftCLISBOMScanner(context.Layers, effect.NewExecutor(), b.Logger)
+		if err := bomScanner.ScanBuild(context.Application.Path, libcnb.CycloneDXJSON, libcnb.SyftJSON); err != nil {
+			return libcnb.BuildResult{}, fmt.Errorf("unable to create Build SBoM \n%w", err)
 		}
 	}
 
