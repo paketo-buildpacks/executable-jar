@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/paketo-buildpacks/libpak/sbom/mocks"
+
 	"github.com/buildpacks/libcnb"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
@@ -31,9 +33,9 @@ import (
 
 func testBuild(t *testing.T, context spec.G, it spec.S) {
 	var (
-		Expect = NewWithT(t).Expect
-
-		ctx libcnb.BuildContext
+		Expect      = NewWithT(t).Expect
+		sbomScanner mocks.SBOMScanner
+		ctx         libcnb.BuildContext
 	)
 
 	it.Before(func() {
@@ -46,6 +48,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
+		sbomScanner = mocks.SBOMScanner{}
+		sbomScanner.On("ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON).Return(nil)
+
 	})
 
 	it.After(func() {
@@ -70,7 +75,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				0644,
 			)).To(Succeed())
 
-			result, err := executable.Build{}.Build(ctx)
+			result, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path, "test-class-path"}))
@@ -96,6 +101,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Default:   true,
 				},
 			))
+			sbomScanner.AssertCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
 		})
 
 		context("manifest with Main-Class and without Class-Path", func() {
@@ -115,7 +121,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					0644,
 				)).To(Succeed())
 
-				result, err := executable.Build{}.Build(ctx)
+				result, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
@@ -141,6 +147,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						Default:   true,
 					},
 				))
+				sbomScanner.AssertCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
 			})
 		})
 
@@ -152,7 +159,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				0644,
 			)).To(Succeed())
 
-			result, err := executable.Build{}.Build(ctx)
+			result, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
@@ -177,6 +184,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Default:   true,
 				},
 			))
+			sbomScanner.AssertCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
 		})
 
 		context("$BP_LIVE_RELOAD_ENABLED is true", func() {
@@ -196,7 +204,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					0644,
 				)).To(Succeed())
 
-				result, err := executable.Build{}.Build(ctx)
+				result, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path}))
@@ -227,6 +235,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						Default:   true,
 					},
 				))
+				sbomScanner.AssertCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
 			})
 		})
 
@@ -244,13 +253,14 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Metadata: map[string]interface{}{"native-image": true},
 				})
 
-				result, err := executable.Build{}.Build(ctx)
+				result, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(result.Processes).To(BeEmpty())
 				Expect(result.Layers).To(HaveLen(1))
 				Expect(result.Layers[0].(executable.ClassPath).ClassPath).To(Equal([]string{ctx.Application.Path, "test-class-path"}))
 				Expect(result.Layers[0].(executable.ClassPath).Launch).To(BeFalse())
+				sbomScanner.AssertNotCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
 			})
 		})
 	})
