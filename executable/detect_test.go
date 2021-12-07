@@ -106,9 +106,13 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			Expect(os.MkdirAll(filepath.Join(path, "META-INF"), 0755)).To(Succeed())
 			Expect(ioutil.WriteFile(
 				filepath.Join(path, "META-INF", "MANIFEST.MF"),
-				[]byte("Main-Class: test-main-class"),
+				[]byte("Main-Class: test-main-class\nBuild-Jdk-Spec: 11.0.312"),
 				0644,
 			)).To(Succeed())
+		})
+
+		it.After(func() {
+			Expect(os.Unsetenv("BP_JRE_VERSION_FROM_MANIFEST")).To(Succeed())
 		})
 
 		it("requires and provides jvm-application-package", func() {
@@ -123,6 +127,27 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 						Requires: []libcnb.BuildPlanRequire{
 							{Name: "syft"},
 							{Name: "jre", Metadata: map[string]interface{}{"launch": true}},
+							{Name: "jvm-application-package"},
+							{Name: "jvm-application"},
+						},
+					},
+				},
+			}))
+		})
+
+		it("requires and provides jvm-application-package of a JVM version from the manifest", func() {
+			Expect(os.Setenv("BP_JRE_VERSION_FROM_MANIFEST", "true")).To(Succeed())
+			Expect(detect.Detect(ctx)).To(Equal(libcnb.DetectResult{
+				Pass: true,
+				Plans: []libcnb.BuildPlan{
+					{
+						Provides: []libcnb.BuildPlanProvide{
+							{Name: "jvm-application"},
+							{Name: "jvm-application-package"},
+						},
+						Requires: []libcnb.BuildPlanRequire{
+							{Name: "syft"},
+							{Name: "jre", Metadata: map[string]interface{}{"launch": true, "version": "11"}},
 							{Name: "jvm-application-package"},
 							{Name: "jvm-application"},
 						},

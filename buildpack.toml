@@ -42,6 +42,12 @@ description = "enable live process reload in the image"
 default     = "false"
 build       = true
 
+[[metadata.configurations]]
+name        = "BP_JRE_VERSION_FROM_MANIFEST"
+description = "require jre of the same major version as specified in the 'Build-Jdk-Spec' metadata field"
+default     = "false"
+build       = true
+
 [metadata]
 pre-package   = "scripts/build.sh"
 include-files = [

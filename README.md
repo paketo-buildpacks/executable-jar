@@ -22,10 +22,15 @@ When `$BP_LIVE_RELOAD_ENABLE` is true:
 * Requests that `watchexec` be installed
 * Contributes `reload` process type
 
+When `$BP_JRE_VERSION_FROM_MANIFEST` is true:
+* If `<APPLICATION_ROOT>/META-INF/MANIFEST.MF` `Build-Jdk-Spec` exists
+  * Requests that a JRE of a specific major version should be installed.
+
 ## Configuration
-| Environment Variable      | Description                                       |
-| ------------------------- | ------------------------------------------------- |
-| `$BP_LIVE_RELOAD_ENABLED` | Enable live process reloading. Defaults to false. |
+| Environment Variable            | Description                                               |
+| --------------------------------| --------------------------------------------------------- |
+| `$BP_LIVE_RELOAD_ENABLED`       | Enable live process reloading. Defaults to false.         |
+| `$BP_JRE_VERSION_FROM_MANIFEST` | Request the same major version of JRE. Defaults to false. |
 
 ## License
 This buildpack is released under version 2.0 of the [Apache License][a].

@@ -18,6 +18,7 @@ package executable
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
@@ -64,6 +65,16 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 
 	if _, ok := m.Get("Main-Class"); ok {
 		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
+
+		if v, ok := m.Get("Build-Jdk-Spec"); ok && cr.ResolveBool("BP_JRE_VERSION_FROM_MANIFEST") {
+			jvmMajorVersion := extractMajorVersion(v)
+
+			for i, r := range result.Plans[0].Requires {
+				if r.Name == PlanEntryJRE {
+					result.Plans[0].Requires[i].Metadata["version"] = jvmMajorVersion
+				}
+			}
+		}
 	}
 
 	if cr.ResolveBool("BP_LIVE_RELOAD_ENABLED") {
@@ -75,4 +86,14 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 	}
 
 	return result, nil
+}
+
+func extractMajorVersion(v string) string {
+	splitVersion := strings.Split(v, ".")
+
+	if splitVersion[0] == "1" {
+		return splitVersion[1]
+	}
+
+	return splitVersion[0]
 }
