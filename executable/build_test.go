@@ -17,8 +17,6 @@
 package executable_test
 
 import (
-	"archive/zip"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -290,24 +288,10 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		})
 	})
 
-	var createJARFile = func(fileName string, mainClass string) {
-		archive, err := os.Create(filepath.Join(ctx.Application.Path, fileName))
-		Expect(err).NotTo(HaveOccurred())
-		defer archive.Close()
-		zipWriter := zip.NewWriter(archive)
-
-		if mainClass != "" {
-			manifestWriter, err := zipWriter.Create("META-INF/MANIFEST.MF")
-			Expect(err).NotTo(HaveOccurred())
-			manifestWriter.Write([]byte(fmt.Sprintf("Main-Class: %s", mainClass)))
-		}
-		zipWriter.Close()
-	}
-
 	context("JAR files with a Main-Class", func() {
 		it.Before(func() {
-			createJARFile("a.jar", "test.Main")
-			createJARFile("b.jar", "")
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "a.jar"), map[string]string{"Main-Class": "test.Main"})).To(Succeed())
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "b.jar"), map[string]string{})).To(Succeed())
 		})
 
 		it("contributes Executable JAR with java -jar and without ClassPath layer", func() {
@@ -342,8 +326,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	context("JAR files without a Main-Class", func() {
 		it.Before(func() {
-			createJARFile("a.jar", "")
-			createJARFile("b.jar", "")
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "a.jar"), map[string]string{})).To(Succeed())
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "b.jar"), map[string]string{})).To(Succeed())
 		})
 
 		it("return unmet jvm-application plan entry", func() {
