@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 the original author or authors.
+ * Copyright 2018-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 	"github.com/paketo-buildpacks/libpak/sbom"
 
 	"github.com/buildpacks/libcnb"
-	"github.com/paketo-buildpacks/libjvm"
 	"github.com/paketo-buildpacks/libpak"
 	"github.com/paketo-buildpacks/libpak/bard"
 )
@@ -37,13 +36,12 @@ type Build struct {
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	result := libcnb.NewBuildResult()
 
-	m, err := libjvm.NewManifest(context.Application.Path)
+	execJar, err := LoadExecutableJAR(context.Application.Path)
 	if err != nil {
-		return libcnb.BuildResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
+		return libcnb.BuildResult{}, fmt.Errorf("unable to load executable JAR\n%w", err)
 	}
 
-	mc, ok := m.Get("Main-Class")
-	if !ok {
+	if !execJar.Executable {
 		for _, entry := range context.Plan.Entries {
 			result.Unmet = append(result.Unmet, libcnb.UnmetPlanEntry{Name: entry.Name})
 		}
@@ -71,7 +69,14 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 
 	if launch {
 		command := "java"
-		arguments := []string{mc}
+		arguments := []string{}
+
+		if execJar.ExplodedJAR {
+			arguments = append(arguments, execJar.MainClass)
+		} else {
+			arguments = append(arguments, "-jar", execJar.Path)
+		}
+
 		result.Processes = append(result.Processes,
 			libcnb.Process{
 				Type:      "executable-jar",
@@ -103,7 +108,7 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 				libcnb.Process{
 					Type:      "reload",
 					Command:   "watchexec",
-					Arguments: []string{"-r", command, mc},
+					Arguments: append([]string{"-r", command}, arguments...),
 					Direct:    true,
 					Default:   true,
 				},
@@ -118,14 +123,16 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 		}
 	}
 
-	cp := []string{context.Application.Path}
-	if s, ok := m.Get("Class-Path"); ok {
-		cp = append(cp, strings.Split(s, " ")...)
-	}
+	if execJar.ExplodedJAR {
+		cp := []string{context.Application.Path}
+		if s, ok := execJar.Properties.Get("Class-Path"); ok {
+			cp = append(cp, strings.Split(s, " ")...)
+		}
 
-	classpathLayer := NewClassPath(cp, launch)
-	classpathLayer.Logger = b.Logger
-	result.Layers = append(result.Layers, classpathLayer)
+		classpathLayer := NewClassPath(cp, launch)
+		classpathLayer.Logger = b.Logger
+		result.Layers = append(result.Layers, classpathLayer)
+	}
 
 	return result, nil
 }

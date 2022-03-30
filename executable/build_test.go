@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 the original author or authors.
+ * Copyright 2018-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,6 +274,63 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				0644,
 			)).To(Succeed())
 
+			ctx.Plan.Entries = append(ctx.Plan.Entries, libcnb.BuildpackPlanEntry{
+				Name: "jvm-application",
+			})
+
+			result, err := executable.Build{}.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(result.Layers).To(BeEmpty())
+			Expect(result.Processes).To(BeEmpty())
+			Expect(result.Unmet).To(HaveLen(1))
+			Expect(result.Unmet[0].Name).To(Equal("jvm-application"))
+		})
+	})
+
+	context("JAR files with a Main-Class", func() {
+		it.Before(func() {
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "a.jar"), map[string]string{"Main-Class": "test.Main"})).To(Succeed())
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "b.jar"), map[string]string{})).To(Succeed())
+		})
+
+		it("contributes Executable JAR with java -jar and without ClassPath layer", func() {
+			result, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(len(result.Layers)).To(Equal(0))
+			Expect(result.Processes).To(ContainElements(
+				libcnb.Process{
+					Type:      "executable-jar",
+					Command:   "java",
+					Arguments: []string{"-jar", filepath.Join(ctx.Application.Path, "a.jar")},
+					Direct:    true,
+				},
+				libcnb.Process{
+					Type:      "task",
+					Command:   "java",
+					Arguments: []string{"-jar", filepath.Join(ctx.Application.Path, "a.jar")},
+					Direct:    true,
+				},
+				libcnb.Process{
+					Type:      "web",
+					Command:   "java",
+					Arguments: []string{"-jar", filepath.Join(ctx.Application.Path, "a.jar")},
+					Direct:    true,
+					Default:   true,
+				},
+			))
+			sbomScanner.AssertCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
+		})
+	})
+
+	context("JAR files without a Main-Class", func() {
+		it.Before(func() {
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "a.jar"), map[string]string{})).To(Succeed())
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "b.jar"), map[string]string{})).To(Succeed())
+		})
+
+		it("return unmet jvm-application plan entry", func() {
 			ctx.Plan.Entries = append(ctx.Plan.Entries, libcnb.BuildpackPlanEntry{
 				Name: "jvm-application",
 			})

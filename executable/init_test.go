@@ -28,5 +28,6 @@ func TestUnit(t *testing.T) {
 	suite("Build", testBuild)
 	suite("ClassPath", testClassPath)
 	suite("Detect", testDetect)
+	suite("Manifest", testManifest)
 	suite.Run(t)
 }
