@@ -4,8 +4,9 @@ go 1.17
 
 require (
 	github.com/buildpacks/libcnb v1.25.5
+	github.com/magiconair/properties v1.8.6
 	github.com/onsi/gomega v1.19.0
-	github.com/paketo-buildpacks/libjvm v1.36.0
+	github.com/paketo-buildpacks/libjvm v1.36.1
 	github.com/paketo-buildpacks/libpak v1.59.0
 	github.com/sclevine/spec v1.4.0
 )
@@ -18,7 +19,6 @@ require (
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/heroku/color v0.0.6 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
