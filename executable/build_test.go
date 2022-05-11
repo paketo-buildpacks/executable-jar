@@ -230,7 +230,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					libcnb.Process{
 						Type:      "reload",
 						Command:   "watchexec",
-						Arguments: []string{"-r", "java", "test-main-class"},
+						Arguments: []string{"-r", "--shell=none", "--", "java", "test-main-class"},
 						Direct:    true,
 						Default:   true,
 					},

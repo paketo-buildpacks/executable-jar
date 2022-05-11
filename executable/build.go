@@ -100,6 +100,10 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 		)
 
 		if cr.ResolveBool("BP_LIVE_RELOAD_ENABLED") {
+			if !execJar.ExplodedJAR {
+				b.Logger.Body("WARNING: Live Reload has been enabled, however, your command is set to run from a JAR file. This may fail or be a worse experience as the entire JAR file must change to trigger a reload.")
+			}
+
 			for i := 0; i < len(result.Processes); i++ {
 				result.Processes[i].Default = false
 			}
@@ -108,7 +112,7 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 				libcnb.Process{
 					Type:      "reload",
 					Command:   "watchexec",
-					Arguments: append([]string{"-r", command}, arguments...),
+					Arguments: append([]string{"-r", "--shell=none", "--", command}, arguments...),
 					Direct:    true,
 					Default:   true,
 				},
