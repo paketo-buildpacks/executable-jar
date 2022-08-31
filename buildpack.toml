@@ -16,7 +16,7 @@ api = "0.7"
 
 [buildpack]
   id       = "paketo-buildpacks/executable-jar"
-  name     = "Paketo Executable JAR Buildpack"
+  name     = "Paketo Buildpack for Executable JAR"
   version  = "{{.version}}"
   homepage = "https://github.com/paketo-buildpacks/executable-jar"
   description = "A Cloud Native Buildpack that contributes a Process Type for executable JARs"
