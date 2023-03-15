@@ -17,6 +17,8 @@
 package executable_test
 
 import (
+	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -236,6 +238,40 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					},
 				))
 				sbomScanner.AssertCalled(t, "ScanLaunch", ctx.Application.Path, libcnb.SyftJSON, libcnb.CycloneDXJSON)
+			})
+
+			it("marks all workspace files as group read-writable", func() {
+				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
+				Expect(ioutil.WriteFile(
+					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
+					[]byte(`Main-Class: test-main-class`),
+					0644,
+				)).To(Succeed())
+
+				_, err := executable.Build{SBOMScanner: &sbomScanner}.Build(ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				var modes []string
+				err = filepath.Walk(ctx.Application.Path, func(path string, info fs.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if path != ctx.Application.Path {
+						rel, err := filepath.Rel(ctx.Application.Path, path)
+						if err != nil {
+							return err
+						}
+						modes = append(modes, fmt.Sprintf("%s %s", info.Mode(), rel))
+					}
+
+					return nil
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(modes).To(ConsistOf(
+					"drwxrwxr-x META-INF",
+					"-rw-rw-r-- META-INF/MANIFEST.MF",
+				))
 			})
 		})
 

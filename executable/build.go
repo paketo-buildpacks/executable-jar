@@ -18,6 +18,9 @@ package executable
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/paketo-buildpacks/libpak/effect"
@@ -117,6 +120,20 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 					Default:   true,
 				},
 			)
+
+			err = filepath.Walk(context.Application.Path, func(path string, info fs.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if path == context.Application.Path {
+					return nil
+				}
+
+				return os.Chmod(path, info.Mode()|0060)
+			})
+			if err != nil {
+				return libcnb.BuildResult{}, fmt.Errorf("unable to mark files as group read-write for live reload\n%w", err)
+			}
 		}
 
 		if b.SBOMScanner == nil {
