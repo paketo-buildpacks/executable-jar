@@ -117,6 +117,8 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		it("loads props from first executable JAR found", func() {
+			Expect(os.MkdirAll(filepath.Join(appPath, "lib"), 0755))
+			Expect(CreateJAR(filepath.Join(appPath, "lib", "a.jar"), map[string]string{"Main-Class": "Lib1"})).To(Succeed())
 			Expect(CreateJAR(filepath.Join(appPath, "test-1.jar"), map[string]string{"Main-Class": "Foo1"})).To(Succeed())
 			Expect(CreateJAR(filepath.Join(appPath, "test-2.jar"), map[string]string{"Main-Class": "Foo2"})).To(Succeed())
 

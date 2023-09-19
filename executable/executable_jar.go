@@ -25,6 +25,8 @@ import (
 
 	"github.com/magiconair/properties"
 	"github.com/paketo-buildpacks/libjvm"
+
+	"github.com/paketo-buildpacks/executable-jar/v6/internal/fsutil"
 )
 
 type ExecutableJAR struct {
@@ -75,7 +77,7 @@ func findExecutableJAR(appPath string) (string, *properties.Properties, error) {
 	jarPath := ""
 	stopWalk := errors.New("stop walking")
 
-	err := filepath.Walk(appPath, func(path string, info os.FileInfo, err error) error {
+	err := fsutil.Walk(appPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
