@@ -32,10 +32,10 @@ When `$BP_LIVE_RELOAD_ENABLE` is true:
 
 ## Configuration
 
-| Environment Variable      | Description                                       |
-| ------------------------- | ------------------------------------------------- |
-| `$BP_LIVE_RELOAD_ENABLED` | Enable live process reloading. Defaults to false. |
-
+| Environment Variable          | Description                                                                                                                                                               |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `$BP_LIVE_RELOAD_ENABLED`     | Enable live process reloading. Defaults to false.                                                                                                                         |
+| `$BP_EXECUTABLE_JAR_LOCATION` | An optional glob to specify the JAR used as an entrypoint. Defaults to "", which causes the buildpack to do a breadth-first search for the first executable JAR it finds. |
 ## License
 
 This buildpack is released under version 2.0 of the [Apache License][a].

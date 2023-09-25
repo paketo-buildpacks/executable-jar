@@ -55,7 +55,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 				0644,
 			)).To(Succeed())
 
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.Executable).To(BeFalse())
@@ -64,7 +64,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		it("fail if file not found", func() {
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.Executable).To(BeFalse())
@@ -80,7 +80,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 				0644,
 			)).To(Succeed())
 
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.MainClass).To(Equal("Foo"))
@@ -95,7 +95,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 		it("fails if it can't find an executable JAR", func() {
 			Expect(CreateJAR(filepath.Join(appPath, "test-1.jar"), map[string]string{"foo": "bar"})).To(Succeed())
 
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.Executable).To(BeFalse())
@@ -106,7 +106,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 		it("loads props from an executable JAR", func() {
 			Expect(CreateJAR(filepath.Join(appPath, "test-1.jar"), map[string]string{"Main-Class": "Foo"})).To(Succeed())
 
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.MainClass).To(Equal("Foo"))
@@ -117,10 +117,12 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		it("loads props from first executable JAR found", func() {
+			Expect(os.MkdirAll(filepath.Join(appPath, "lib"), 0755))
+			Expect(CreateJAR(filepath.Join(appPath, "lib", "a.jar"), map[string]string{"Main-Class": "Lib1"})).To(Succeed())
 			Expect(CreateJAR(filepath.Join(appPath, "test-1.jar"), map[string]string{"Main-Class": "Foo1"})).To(Succeed())
 			Expect(CreateJAR(filepath.Join(appPath, "test-2.jar"), map[string]string{"Main-Class": "Foo2"})).To(Succeed())
 
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.MainClass).To(Equal("Foo1"))
@@ -130,11 +132,27 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 			Expect(ej.Properties.Map()).To(HaveKeyWithValue("Main-Class", "Foo1"))
 		})
 
+		it("loads props from executable JAR specified by glob", func() {
+			Expect(os.MkdirAll(filepath.Join(appPath, "lib"), 0755))
+			Expect(CreateJAR(filepath.Join(appPath, "lib", "a.jar"), map[string]string{"Main-Class": "Lib1"})).To(Succeed())
+			Expect(CreateJAR(filepath.Join(appPath, "test-1.jar"), map[string]string{"Main-Class": "Foo1"})).To(Succeed())
+			Expect(CreateJAR(filepath.Join(appPath, "test-2.jar"), map[string]string{"Main-Class": "Foo2"})).To(Succeed())
+
+			ej, err := executable.LoadExecutableJAR(appPath, "*-2.jar")
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ej.MainClass).To(Equal("Foo2"))
+			Expect(ej.Path).To(Equal(filepath.Join(appPath, "test-2.jar")))
+			Expect(ej.ExplodedJAR).To(BeFalse())
+			Expect(ej.Executable).To(BeTrue())
+			Expect(ej.Properties.Map()).To(HaveKeyWithValue("Main-Class", "Foo2"))
+		})
+
 		it("skips non-executable JARs", func() {
 			Expect(CreateJAR(filepath.Join(appPath, "test-1.jar"), map[string]string{"foo": "bar"})).To(Succeed())
 			Expect(CreateJAR(filepath.Join(appPath, "test-2.jar"), map[string]string{"Main-Class": "Foo2"})).To(Succeed())
 
-			ej, err := executable.LoadExecutableJAR(appPath)
+			ej, err := executable.LoadExecutableJAR(appPath, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ej.MainClass).To(Equal("Foo2"))

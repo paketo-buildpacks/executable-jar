@@ -25,6 +25,8 @@ import (
 
 	"github.com/magiconair/properties"
 	"github.com/paketo-buildpacks/libjvm"
+
+	"github.com/paketo-buildpacks/executable-jar/v6/internal/fsutil"
 )
 
 type ExecutableJAR struct {
@@ -35,7 +37,7 @@ type ExecutableJAR struct {
 	ExplodedJAR bool
 }
 
-func LoadExecutableJAR(appPath string) (ExecutableJAR, error) {
+func LoadExecutableJAR(appPath string, executableJarGlob string) (ExecutableJAR, error) {
 	_, err := os.Stat(filepath.Join(appPath, "META-INF", "MANIFEST.MF"))
 	if err != nil && !os.IsNotExist(err) {
 		return ExecutableJAR{}, fmt.Errorf("unable to read manifest.mf\n%w", err)
@@ -51,7 +53,7 @@ func LoadExecutableJAR(appPath string) (ExecutableJAR, error) {
 			return ExecutableJAR{}, fmt.Errorf("unable to parse manifest\n%w", err)
 		}
 	} else {
-		jarPath, props, err = findExecutableJAR(appPath)
+		jarPath, props, err = findExecutableJAR(appPath, executableJarGlob)
 		if err != nil {
 			return ExecutableJAR{}, fmt.Errorf("unable to parse manifest\n%w", err)
 		}
@@ -70,12 +72,26 @@ func LoadExecutableJAR(appPath string) (ExecutableJAR, error) {
 	return ExecutableJAR{}, nil
 }
 
-func findExecutableJAR(appPath string) (string, *properties.Properties, error) {
+func findExecutableJAR(appPath, executableJarGlob string) (string, *properties.Properties, error) {
 	props := &properties.Properties{}
 	jarPath := ""
 	stopWalk := errors.New("stop walking")
 
-	err := filepath.Walk(appPath, func(path string, info os.FileInfo, err error) error {
+	w := func(root string, fn filepath.WalkFunc) error {
+		if executableJarGlob != "" {
+			files, _ := filepath.Glob(filepath.Join(appPath, executableJarGlob))
+			for _, f := range files {
+				fi, err := os.Lstat(f)
+				err = fn(f, fi, err)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return fsutil.Walk(root, fn)
+	}
+
+	err := w(appPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

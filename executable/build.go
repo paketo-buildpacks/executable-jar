@@ -39,7 +39,13 @@ type Build struct {
 func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	result := libcnb.NewBuildResult()
 
-	execJar, err := LoadExecutableJAR(context.Application.Path)
+	cr, err := libpak.NewConfigurationResolver(context.Buildpack, nil)
+	if err != nil {
+		return libcnb.BuildResult{}, fmt.Errorf("unable to create configuration resolver\n%w", err)
+	}
+
+	jarGlob, _ := cr.Resolve("BP_EXECUTABLE_JAR_LOCATION")
+	execJar, err := LoadExecutableJAR(context.Application.Path, jarGlob)
 	if err != nil {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to load executable JAR\n%w", err)
 	}
@@ -53,7 +59,7 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 
 	b.Logger.Title(context.Buildpack)
 
-	cr, err := libpak.NewConfigurationResolver(context.Buildpack, nil)
+	cr, err = libpak.NewConfigurationResolver(context.Buildpack, nil)
 	if err != nil {
 		return libcnb.BuildResult{}, fmt.Errorf("unable to create configuration resolver\n%w", err)
 	}
