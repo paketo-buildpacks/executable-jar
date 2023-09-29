@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/buildpacks/libcnb v1.29.0
-	github.com/google/go-cmp v0.6.0
 	github.com/magiconair/properties v1.8.7
 	github.com/onsi/gomega v1.28.0
 	github.com/paketo-buildpacks/libjvm v1.43.2
@@ -17,6 +16,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/creack/pty v1.1.18 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/heroku/color v0.0.6 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
