@@ -10,141 +10,212 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-
+	. "github.com/onsi/gomega"
 	"github.com/paketo-buildpacks/executable-jar/v6/internal/fsutil"
+	"github.com/sclevine/spec"
 )
 
-func TestWalkAgainstStdlibWalk(t *testing.T) {
-	type fileInfo struct {
-		Path string
-		Type fs.FileMode
-	}
-	createWalkFn := func(out *[]fileInfo) filepath.WalkFunc {
-		return func(path string, fi fs.FileInfo, err error) error {
+type fileInfo struct {
+	Path string
+	Type fs.FileMode
+}
+
+const (
+	filename      = "a.txt"
+	contentA1A2   = "a1/a2/" + filename
+	contentC1A2A3 = "c1/a2/a3/" + filename
+)
+
+var (
+	errSentinel = errors.New("sentinel")
+)
+
+func testWalk(t *testing.T, context spec.G, it spec.S) {
+	var (
+		root   string
+		Expect = NewWithT(t).Expect
+	)
+
+	it.Before(func() {
+		root = createTestDir(t)
+	})
+
+	context("compare to stdlib Walk", func() {
+
+		var createWalkFn func(out *[]fileInfo) filepath.WalkFunc = func(out *[]fileInfo) filepath.WalkFunc {
+			return func(path string, fi fs.FileInfo, err error) error {
+				if err != nil {
+					return nil
+				}
+				var typ fs.FileMode
+				if fi != nil {
+					typ = fi.Mode().Type()
+				}
+				*out = append(*out, fileInfo{
+					Path: path,
+					Type: typ,
+				})
+				return nil
+			}
+		}
+
+		it("basic", func() {
+			var ourFiles, theirFiles []fileInfo
+
+			errOurs := fsutil.Walk(root, createWalkFn(&ourFiles))
+			Expect(errOurs).NotTo(HaveOccurred())
+
+			errTheirs := filepath.Walk(root, createWalkFn(&theirFiles))
+			Expect(errTheirs).NotTo(HaveOccurred())
+
+			sortBFSOrder(theirFiles)
+
+			Expect(ourFiles).To(Equal(theirFiles))
+		})
+
+		it("non-existent root folder", func() {
+			var ourFiles, theirFiles []fileInfo
+			root = filepath.Join(t.TempDir(), "nonexistent")
+
+			errOurs := fsutil.Walk(root, createWalkFn(&ourFiles))
+			Expect(errOurs).NotTo(HaveOccurred())
+
+			errTheirs := filepath.Walk(root, createWalkFn(&theirFiles))
+			Expect(errTheirs).NotTo(HaveOccurred())
+
+			sortBFSOrder(theirFiles)
+
+			Expect(ourFiles).To(Equal(theirFiles))
+		})
+
+		it("propagate error", func() {
+			var ourFiles, theirFiles []fileInfo
+			createWalkFn = func(out *[]fileInfo) filepath.WalkFunc {
+				return func(path string, fi fs.FileInfo, err error) error {
+					return errSentinel
+				}
+			}
+
+			errOurs := fsutil.Walk(root, createWalkFn(&ourFiles))
+			Expect(errOurs).To(MatchError(errSentinel))
+
+			errTheirs := filepath.Walk(root, createWalkFn(&theirFiles))
+			Expect(errTheirs).To(MatchError(errSentinel))
+
+			sortBFSOrder(theirFiles)
+
+			Expect(ourFiles).To(Equal(theirFiles))
+		})
+
+	})
+
+	it("finds a file", func() {
+		var content string
+		err := fsutil.Walk(root, func(path string, fi fs.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
-			var typ fs.FileMode
-			if fi != nil {
-				typ = fi.Mode().Type()
+			if fi.Mode().Type() == 0 {
+				_, name := filepath.Split(path)
+				if name == filename {
+					bs, e := os.ReadFile(path)
+					if e != nil {
+						return e
+					}
+					content = string(bs)
+					return errSentinel
+				}
 			}
-			*out = append(*out, fileInfo{
-				Path: path,
-				Type: typ,
-			})
 			return nil
-		}
-	}
-
-	type args struct {
-		root string
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "basic",
-			args: args{
-				root: createTestDir(t),
-			},
-		},
-		{
-			name: "non-existent root",
-			args: args{
-				root: filepath.Join(t.TempDir(), "nonexistent"),
-			},
-		},
-	}
-	for _, tt := range tests {
-
-		t.Run(tt.name, func(t *testing.T) {
-			var ourFiles, theirsFiles []fileInfo
-			errOurs := fsutil.Walk(tt.args.root, createWalkFn(&ourFiles))
-			errTheirs := filepath.Walk(tt.args.root, createWalkFn(&theirsFiles))
-
-			if (ourFiles == nil) != (theirsFiles == nil) {
-				t.Errorf("errors does not match, actual error: %#v, expected error: %#v", errOurs, errTheirs)
-			}
-
-			// sort output of filepath.Walk in BFS order
-			sort.SliceStable(theirsFiles, func(i, j int) bool {
-				iLen := len(strings.Split(theirsFiles[i].Path, string(filepath.Separator)))
-				jLen := len(strings.Split(theirsFiles[j].Path, string(filepath.Separator)))
-				return iLen < jLen
-			})
-
-			if d := cmp.Diff(theirsFiles, ourFiles); d != "" {
-				t.Error("output missmatch (-want, +got):", d)
-			}
 		})
 
-	}
-}
-
-func TestWalkSearch(t *testing.T) {
-	root := createTestDir(t)
-	sentinelErr := errors.New("sentinel")
-	var content string
-	err := fsutil.Walk(root, func(path string, fi fs.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if fi.Mode().Type() == 0 {
-			_, name := filepath.Split(path)
-			if name == "a.txt" {
-				bs, e := os.ReadFile(path)
-				if e != nil {
-					return e
-				}
-				content = string(bs)
-				return sentinelErr
-			}
-		}
-		return nil
+		Expect(err).To(MatchError(errSentinel))
+		Expect(content).To(Equal(contentA1A2))
 	})
-	if !errors.Is(err, sentinelErr) {
-		t.Errorf("incorrect return value, expected sentinel error but got: %v", err)
-	}
-	if content != "a1/a2/a.txt" {
-		t.Errorf("unexpected content: %q", content)
-	}
-}
 
-func TestWalkSearchWithSkipDir(t *testing.T) {
-	root := createTestDir(t)
-	sentinelErr := errors.New("sentinel")
-	var content string
-	err := fsutil.Walk(root, func(path string, fi fs.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		rp, err := filepath.Rel(root, path)
-		if rp == "a1" { // skip the first dir containing a.txt
-			return filepath.SkipDir
-		}
-		if fi.Mode().Type() == 0 {
-			_, name := filepath.Split(path)
-			if name == "a.txt" {
-				bs, e := os.ReadFile(path)
-				if e != nil {
-					return e
-				}
-				content = string(bs)
-				return sentinelErr
+	it("finds a file (skipping a dir)", func() {
+		var content string
+		err := fsutil.Walk(root, func(path string, fi fs.FileInfo, err error) error {
+			if err != nil {
+				return nil
 			}
-		}
-		return nil
+			rp, err := filepath.Rel(root, path)
+			Expect(err).NotTo(HaveOccurred())
+			if rp == "a1" { // skip the first dir containing a.txt
+				return filepath.SkipDir
+			}
+			if fi.Mode().Type() == 0 {
+				_, name := filepath.Split(path)
+				if name == filename {
+					bs, e := os.ReadFile(path)
+					if e != nil {
+						return e
+					}
+					content = string(bs)
+					return errSentinel
+				}
+			}
+			return nil
+		})
+
+		Expect(err).To(MatchError(errSentinel))
+		Expect(content).To(Equal(contentC1A2A3))
 	})
-	if !errors.Is(err, sentinelErr) {
-		t.Errorf("incorrect return value, expected sentinel error but got: %v", err)
-	}
-	if content != "c1/a2/a3/a.txt" {
-		t.Errorf("unexpected content: %q", content)
-	}
 }
 
+func sortBFSOrder(files []fileInfo) {
+	sort.SliceStable(files, func(i, j int) bool {
+		iLen := len(strings.Split(files[i].Path, string(filepath.Separator)))
+		jLen := len(strings.Split(files[j].Path, string(filepath.Separator)))
+		return iLen < jLen
+	})
+
+}
+
+// Create this file structure for the tests to run (obtained using `tree`)
+// ├── a.lnk -> a1
+// ├── a1
+// │   ├── a2
+// │   │   ├── a.txt
+// │   │   ├── a3
+// │   │   ├── b3
+// │   │   └── c3
+// │   ├── b2
+// │   │   ├── a3
+// │   │   ├── b3
+// │   │   └── c3
+// │   └── c2
+// │       ├── a3
+// │       ├── b3
+// │       └── c3
+// ├── b1
+// │   ├── a2
+// │   │   ├── a3
+// │   │   ├── b3
+// │   │   └── c3
+// │   ├── b2
+// │   │   ├── a3
+// │   │   ├── b3
+// │   │   └── c3
+// │   └── c2
+// │       ├── a3
+// │       ├── b3
+// │       └── c3
+// └── c1
+//
+//	├── a2
+//	│   ├── a3
+//	│   │   └── a.txt
+//	│   ├── b3
+//	│   └── c3
+//	├── b2
+//	│   ├── a3
+//	│   ├── b3
+//	│   └── c3
+//	└── c2
+//	    ├── a3
+//	    ├── b3
+//	    └── c3
 func createTestDir(t *testing.T) string {
 	root := t.TempDir()
 	var err error
@@ -181,12 +252,12 @@ func createTestDir(t *testing.T) string {
 		t.Fatal(err)
 	}
 
-	err = os.WriteFile(filepath.Join(root, "a1", "a2", "a.txt"), []byte(`a1/a2/a.txt`), 0644)
+	err = os.WriteFile(filepath.Join(root, "a1", "a2", filename), []byte(contentA1A2), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = os.WriteFile(filepath.Join(root, "c1", "a2", "a3", "a.txt"), []byte(`c1/a2/a3/a.txt`), 0644)
+	err = os.WriteFile(filepath.Join(root, "c1", "a2", "a3", filename), []byte(contentC1A2A3), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
