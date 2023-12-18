@@ -18,11 +18,11 @@ package executable
 
 import (
 	"fmt"
-
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
 	"github.com/paketo-buildpacks/libpak"
 	"github.com/paketo-buildpacks/libpak/bard"
+	"github.com/paketo-buildpacks/libpak/sherpa"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 	PlanEntrySyft                  = "syft"
 )
 
-type Detect struct{
+type Detect struct {
 	Logger bard.Logger
 }
 
@@ -67,6 +67,11 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 
 	if _, ok := m.Get("Main-Class"); ok {
 		d.Logger.Info("PASSED: 'Main-Class' manifest attribute found")
+		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
+	}
+
+	if ok, _ := sherpa.FileExists("run-app.jar"); ok {
+		d.Logger.Info("PASSED: 'run-app.jar' CDS jar was found")
 		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
 	}
 
