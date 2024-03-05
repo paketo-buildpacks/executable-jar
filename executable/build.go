@@ -79,7 +79,7 @@ func (b Build) Build(context libcnb.BuildContext) (libcnb.BuildResult, error) {
 	if launch {
 		command := "java"
 		arguments := []string{}
-		appCds := cr.ResolveBool("BP_APP_CDS_ENABLED")
+		appCds := cr.ResolveBool("BP_JVM_CDS_ENABLED")
 		if appCds {
 			arguments = append(arguments, "-jar", "run-app.jar")
 		} else if execJar.ExplodedJAR {
