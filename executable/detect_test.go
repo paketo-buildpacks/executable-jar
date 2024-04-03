@@ -132,6 +132,32 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		})
 	})
 
+	context("META-INF/MANIFEST.MF not found but there is JAR with Main-Class", func() {
+		it.Before(func() {
+			Expect(CreateJAR(filepath.Join(ctx.Application.Path, "a.jar"), map[string]string{"Main-Class": "test.Main"})).To(Succeed())
+		})
+
+		it("requires and provides jvm-application-package", func() {
+			Expect(detect.Detect(ctx)).To(Equal(libcnb.DetectResult{
+				Pass: true,
+				Plans: []libcnb.BuildPlan{
+					{
+						Provides: []libcnb.BuildPlanProvide{
+							{Name: "jvm-application"},
+							{Name: "jvm-application-package"},
+						},
+						Requires: []libcnb.BuildPlanRequire{
+							{Name: "syft"},
+							{Name: "jre", Metadata: map[string]interface{}{"launch": true}},
+							{Name: "jvm-application-package"},
+							{Name: "jvm-application"},
+						},
+					},
+				},
+			}))
+		})
+	})
+
 	context("$BP_LIVE_RELOAD_ENABLED is set", func() {
 		it.Before(func() {
 			Expect(os.Setenv("BP_LIVE_RELOAD_ENABLED", "true")).To(Succeed())

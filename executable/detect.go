@@ -33,7 +33,7 @@ const (
 	PlanEntrySyft                  = "syft"
 )
 
-type Detect struct{
+type Detect struct {
 	Logger bard.Logger
 }
 
@@ -65,8 +65,14 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 		return libcnb.DetectResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
 	}
 
+	jarGlob, _ := cr.Resolve("BP_EXECUTABLE_JAR_LOCATION")
+	_, props, _ := findExecutableJAR(context.Application.Path, jarGlob)
+
 	if _, ok := m.Get("Main-Class"); ok {
 		d.Logger.Info("PASSED: 'Main-Class' manifest attribute found")
+		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
+	} else if _, ok := props.Get("Main-Class"); ok {
+		d.Logger.Info("PASSED: Jar file with 'Main-Class' manifest attribute found")
 		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
 	}
 
