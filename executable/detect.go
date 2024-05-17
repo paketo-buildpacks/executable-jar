@@ -18,6 +18,7 @@ package executable
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/buildpacks/libcnb"
 	"github.com/paketo-buildpacks/libjvm"
@@ -65,15 +66,20 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 		return libcnb.DetectResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
 	}
 
-	jarGlob, _ := cr.Resolve("BP_EXECUTABLE_JAR_LOCATION")
-	_, props, _ := findExecutableJAR(context.Application.Path, jarGlob)
-
 	if _, ok := m.Get("Main-Class"); ok {
 		d.Logger.Info("PASSED: 'Main-Class' manifest attribute found")
 		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
-	} else if _, ok := props.Get("Main-Class"); ok {
-		d.Logger.Info("PASSED: Jar file with 'Main-Class' manifest attribute found")
-		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
+	} else {
+		jarGlob, _ := cr.Resolve("BP_EXECUTABLE_JAR_LOCATION")
+		execJar, err := LoadExecutableJAR(context.Application.Path, jarGlob)
+		if err != nil {
+			return libcnb.DetectResult{}, fmt.Errorf("unable to load executable JAR\n%w", err)
+		}
+
+		if !reflect.DeepEqual(execJar, ExecutableJAR{}) {
+			d.Logger.Info("PASSED: 'Main-Class' manifest attribute found")
+			result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
+		}
 	}
 
 	if cr.ResolveBool("BP_LIVE_RELOAD_ENABLED") {
