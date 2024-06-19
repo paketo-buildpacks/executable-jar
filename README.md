@@ -4,7 +4,7 @@ The Paketo Buildpack for Executable JAR is a Cloud Native Buildpack that contrib
 
 ## Behavior
 
-This buildpack will participate if all the following conditions are met:
+This buildpack will participate if any the following conditions are met:
 
 * `<APPLICATION_ROOT>/META-INF/MANIFEST.MF` contains a `Main-Class` entry
 * `<APPLICATION_ROOT>/**/*.jar` exists and that JAR has a `/META-INF/MANIFEST.MF` file which contains a `Main-Class` entry

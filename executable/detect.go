@@ -18,9 +18,9 @@ package executable
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/buildpacks/libcnb"
-	"github.com/paketo-buildpacks/libjvm"
 	"github.com/paketo-buildpacks/libpak"
 	"github.com/paketo-buildpacks/libpak/bard"
 )
@@ -33,7 +33,7 @@ const (
 	PlanEntrySyft                  = "syft"
 )
 
-type Detect struct{
+type Detect struct {
 	Logger bard.Logger
 }
 
@@ -60,12 +60,13 @@ func (d Detect) Detect(context libcnb.DetectContext) (libcnb.DetectResult, error
 		},
 	}
 
-	m, err := libjvm.NewManifest(context.Application.Path)
+	jarGlob, _ := cr.Resolve("BP_EXECUTABLE_JAR_LOCATION")
+	execJar, err := LoadExecutableJAR(context.Application.Path, jarGlob)
 	if err != nil {
-		return libcnb.DetectResult{}, fmt.Errorf("unable to read manifest in %s\n%w", context.Application.Path, err)
+		return libcnb.DetectResult{}, fmt.Errorf("unable to load executable JAR\n%w", err)
 	}
 
-	if _, ok := m.Get("Main-Class"); ok {
+	if !reflect.DeepEqual(execJar, ExecutableJAR{}) {
 		d.Logger.Info("PASSED: 'Main-Class' manifest attribute found")
 		result.Plans[0].Provides = append(result.Plans[0].Provides, libcnb.BuildPlanProvide{Name: PlanEntryJVMApplicationPackage})
 	}
