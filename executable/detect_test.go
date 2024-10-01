@@ -17,7 +17,6 @@
 package executable_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,9 +38,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
-		var err error
-		path, err = ioutil.TempDir("", "executable-jar")
-		Expect(err).NotTo(HaveOccurred())
+		path = t.TempDir()
 
 		ctx.Application.Path = path
 	})
@@ -74,7 +71,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	context("empty META-INF/MANIFEST.MF not found", func() {
 		it.Before(func() {
 			Expect(os.MkdirAll(filepath.Join(path, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(path, "META-INF", "MANIFEST.MF"),
 				[]byte(""),
 				0644,
@@ -104,7 +101,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	context("META-INF/MANIFEST.MF with Main-Class", func() {
 		it.Before(func() {
 			Expect(os.MkdirAll(filepath.Join(path, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(path, "META-INF", "MANIFEST.MF"),
 				[]byte("Main-Class: test-main-class"),
 				0644,

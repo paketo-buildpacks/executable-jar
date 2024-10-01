@@ -19,7 +19,6 @@ package executable_test
 import (
 	"archive/zip"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,10 +35,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
-		var err error
-
-		appPath, err = ioutil.TempDir("", "manifest")
-		Expect(err).NotTo(HaveOccurred())
+		appPath = t.TempDir()
 	})
 
 	it.After(func() {
@@ -49,7 +45,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 	context("exploded JAR", func() {
 		it("fail if not executable", func() {
 			Expect(os.MkdirAll(filepath.Join(appPath, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(appPath, "META-INF", "MANIFEST.MF"),
 				[]byte(`foo: bar`),
 				0644,
@@ -74,7 +70,7 @@ func testManifest(t *testing.T, context spec.G, it spec.S) {
 
 		it("loads executable JAR properties", func() {
 			Expect(os.MkdirAll(filepath.Join(appPath, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(appPath, "META-INF", "MANIFEST.MF"),
 				[]byte(`Main-Class: Foo`),
 				0644,
