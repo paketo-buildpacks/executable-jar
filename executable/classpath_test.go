@@ -17,7 +17,6 @@
 package executable_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -37,10 +36,7 @@ func testClassPath(t *testing.T, context spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
-		var err error
-
-		ctx.Layers.Path, err = ioutil.TempDir("", "class-path-layers")
-		Expect(err).NotTo(HaveOccurred())
+		ctx.Layers.Path = t.TempDir()
 		contributor = executable.ClassPath{
 			ClassPath: []string{"test-value-1", "test-value-2"},
 		}

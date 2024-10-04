@@ -19,7 +19,6 @@ package executable_test
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,13 +40,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
-		var err error
-
-		ctx.Application.Path, err = ioutil.TempDir("", "build-application")
-		Expect(err).NotTo(HaveOccurred())
-
-		ctx.Layers.Path, err = ioutil.TempDir("", "build-layers")
-		Expect(err).NotTo(HaveOccurred())
+		ctx.Application.Path = t.TempDir()
+		ctx.Layers.Path = t.TempDir()
 
 		Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
 		sbomScanner = mocks.SBOMScanner{}
@@ -62,7 +56,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	context("manifest with Main-Class and Class-Path", func() {
 		it.Before(func() {
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 				[]byte("Main-Class: test-main-class"),
 				0644,
@@ -71,7 +65,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		it("contributes process types and classpath", func() {
 			Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 				[]byte("Main-Class: test-main-class\nClass-Path: test-class-path"),
 				0644,
@@ -108,7 +102,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		context("manifest with Main-Class and without Class-Path", func() {
 			it.Before(func() {
-				Expect(ioutil.WriteFile(
+				Expect(os.WriteFile(
 					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 					[]byte("Main-Class: test-main-class"),
 					0644,
@@ -117,7 +111,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			it("contributes process types and classpath", func() {
 				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-				Expect(ioutil.WriteFile(
+				Expect(os.WriteFile(
 					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 					[]byte("Main-Class: test-main-class"),
 					0644,
@@ -155,7 +149,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		it("contributes Executable JAR without Class-Path", func() {
 			Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 				[]byte(`Main-Class: test-main-class`),
 				0644,
@@ -200,7 +194,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			it("contributes reloadable process type", func() {
 				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-				Expect(ioutil.WriteFile(
+				Expect(os.WriteFile(
 					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 					[]byte(`Main-Class: test-main-class`),
 					0644,
@@ -242,7 +236,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			it("marks all workspace files as group read-writable", func() {
 				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-				Expect(ioutil.WriteFile(
+				Expect(os.WriteFile(
 					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 					[]byte(`Main-Class: test-main-class`),
 					0644,
@@ -278,7 +272,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		context("native image", func() {
 			it("contributes classpath for build", func() {
 				Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-				Expect(ioutil.WriteFile(
+				Expect(os.WriteFile(
 					filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 					[]byte("Main-Class: test-main-class\nClass-Path: test-class-path"),
 					0644,
@@ -304,7 +298,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 	context("Manifest does not have Main-Class", func() {
 		it("return unmet jvm-application plan entry", func() {
 			Expect(os.MkdirAll(filepath.Join(ctx.Application.Path, "META-INF"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(
+			Expect(os.WriteFile(
 				filepath.Join(ctx.Application.Path, "META-INF", "MANIFEST.MF"),
 				[]byte(`Class-Path: test-class-path`),
 				0644,
