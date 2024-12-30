@@ -5,7 +5,7 @@ go 1.23
 require (
 	github.com/buildpacks/libcnb v1.30.4
 	github.com/magiconair/properties v1.8.9
-	github.com/onsi/gomega v1.36.1
+	github.com/onsi/gomega v1.36.2
 	github.com/paketo-buildpacks/libjvm v1.46.0
 	github.com/paketo-buildpacks/libpak v1.72.1
 	github.com/sclevine/spec v1.4.0
