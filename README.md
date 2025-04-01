@@ -1,4 +1,7 @@
-# `gcr.io/paketo-buildpacks/executable-jar`
+# Paketo Buildpack for Executable Jar
+
+## Buildpack ID: `paketo-buildpacks/executable-jar`
+## Registry URLs: `docker.io/paketobuildpacks/executable-jar`
 
 The Paketo Buildpack for Executable JAR is a Cloud Native Buildpack that contributes a Process Type for executable JARs.
 
