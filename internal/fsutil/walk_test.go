@@ -42,7 +42,7 @@ func testWalk(t *testing.T, context spec.G, it spec.S) {
 
 	context("compare to stdlib Walk", func() {
 
-		var createWalkFn func(out *[]fileInfo) filepath.WalkFunc = func(out *[]fileInfo) filepath.WalkFunc {
+		createWalkFn := func(out *[]fileInfo) filepath.WalkFunc {
 			return func(path string, fi fs.FileInfo, err error) error {
 				if err != nil {
 					return nil
