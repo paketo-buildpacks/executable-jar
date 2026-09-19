@@ -43,7 +43,7 @@ func LoadExecutableJAR(appPath string, executableJarGlob string) (ExecutableJAR,
 		return ExecutableJAR{}, fmt.Errorf("unable to read manifest.mf\n%w", err)
 	}
 
-	explodedJAR := !(err != nil && os.IsNotExist(err))
+	explodedJAR := err == nil || !os.IsNotExist(err)
 	var props *properties.Properties
 	var jarPath = appPath
 

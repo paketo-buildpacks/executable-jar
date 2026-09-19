@@ -165,7 +165,7 @@ func CreateJAR(fileName string, props map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create zip\n%w", err)
 	}
-	defer archive.Close()
+	defer func() { _ = archive.Close() }()
 
 	zipWriter := zip.NewWriter(archive)
 
@@ -176,7 +176,7 @@ func CreateJAR(fileName string, props map[string]string) error {
 		}
 
 		for k, v := range props {
-			_, err = manifestWriter.Write([]byte(fmt.Sprintf("%s: %s", k, v)))
+			_, err = fmt.Fprintf(manifestWriter, "%s: %s", k, v)
 			if err != nil {
 				return fmt.Errorf("unable to write file in zip\n%w", err)
 			}
